@@ -1,84 +1,63 @@
 <template>
-  <div id="wrapper">
-    <form @submit.prevent="submit">
-      <my-input 
-        name="Username" 
-        :rules="{ required: true, min: 5 }"
-        :value="username.value"
-        type="text"
-        @update="update"
-      />
-
-      <my-input 
-        name="Password" 
-        :rules="{ required: true, min: 10 }"
-        :value="password.value"
-        type="password"
-        @update="update"
-      />
-
-      <my-button 
-        color="white"
-        background="darkslateblue"
-        :disabled="!valid"
-      />
-    </form>
-  </div>
+<div>
+  <PokemonCards
+     :pokemons="pokemons" 
+    :selectedId="selectedId"
+    @pokemonSelected="fetchEvolutions"
+  />
+   <PokemonCards :pokemons="evolutions" />
+</div>
 </template>
 
 <script>
-import MyButton from './components/form-validation/Button.vue'
-import MyInput from './components/form-validation/My-Input.vue'
+
+import PokemonCards from './pokeman-project/components/Pokemancrad.vue'
+const api='https://pokeapi.co/api/v2/pokemon'
+const IDS=[1,4,7]
 export default {
-  components: {
-    MyButton,
-    MyInput
+    components: {
+    PokemonCards
   },
-  data() {
+  data(){
     return {
-      username: {
-        value: '',
-        valid: false
-      },
-      password: {
-        value: '',
-        valid: false
-      }
+      pokemons:[],
+      evolutions:[],
+      selectedId: null
     }
   },
-  computed: {
-    valid() {
-      return this.username.valid && this.password.valid
-    }
+  async created(){
+this.pokemons=  await  this.fetchData(IDS)
   },
-  methods: {
-    submit() {
-      console.log('Submit')
+methods:{
+    async fetchEvolutions(pokemon) {
+      console.log("pokemon",pokemon)
+      this.evolutions = await this.fetchData(
+        [pokemon.id + 1, pokemon.id + 2]
+      )
+      this.selectedId = pokemon.id
     },
-    update(payload) {
-      this[payload.name] = {
-        value: payload.value,
-        valid: payload.valid
-      }
-    }
+  async fetchData(ids){
+const response =  await  Promise.all(ids.map(id => window.fetch(`${api}/${id}`)));
+const jsondata= await Promise.all(response.map(data => data.json()))
+
+return jsondata.map(data=>({
+  id: data.id,
+   name: data.name,
+  sprite: data.sprites.other['official-artwork'].front_default,
+  types: data.types.map(type => {
+          return {
+            name: type.type.name
+          }
+        })
+})
+
+)
+
   }
+}
 }
 </script>
 
-<style>
-#wrapper {
-  display: flex;
-  justify-content: center;
-  margin-top: 200px;
-}
-body {
-  font-family: Arial;
-}
-form {
-  max-width: 400px;
-  width: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
+<style scoped>
+
 </style>
